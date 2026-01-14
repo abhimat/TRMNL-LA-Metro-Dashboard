@@ -1,84 +1,40 @@
-{% assign primary_stop_direction = trmnl.plugin_settings.custom_fields_values.primary_stop_direction %}
-{% assign secondary_stop_direction = trmnl.plugin_settings.custom_fields_values.secondary_stop_direction %}
-
-{% assign stop_name = IDX_0.data.predictionsData[0].stopName %}
-{% assign route_name = IDX_0.data.predictionsData[0].routeName %}
-
-{% assign destinations = IDX_0.data.predictionsData[0].destinations %}
-
-{% assign primary_stop_destinations = destinations | where: "headsign", primary_stop_direction %}
-{% assign secondary_stop_destinations = IDX_0.data.predictionsData[0].destinations | where: "headsign", secondary_stop_direction %}
-
-{% assign primary_stop_predictions = primary_stop_destinations[0].predictions %}
-{% assign secondary_stop_predictions = secondary_stop_destinations[0].predictions %}
-
-<style type="text/css">
-  .alerts-table {
-    max-height: 35%;
-  }
-</style>
-
-<div class="layout layout--row p--4 gap--xxlarge mb--0" style="position:relative">
-  <div class="flex flex--col flex--stretch-x flex--center gap--none stretch" style="position:relative">
-    
-    <!-- <div class="mb--3">
-      <span class="label label--small w--auto label--underline">Schedule</span>
-    </div> -->
-    <div class="mb--3">
-      <span class="title">{{ route_name }} Schedule</span>
-    </div>
-    
-    <div class="columns time-table mb--4">
-        <div class="column" data-overflow="true">
-          <div>
-            <span class="label label--small w--auto"><em>to</em></span><br>
-            <span class="label label--outline">{{ primary_stop_direction }}</span>
-          </div>
-        </div>
-
-        <div class="column" data-overflow="true">
-          <div>
-            <span class="label label--small w--auto"><em>to</em></span><br>
-            <span class="label label--outline">{{ secondary_stop_direction }}</span>
-          </div>
-        </div>
-    </div>
-    <div class="columns time-table mb--4">
-        <div class="column {% if uniqueSituationIds == empty %} gap--medium {% endif %}" data-overflow="true">
-          {% render "arrivalTimeSlots", predictions: {{primary_stop_predictions}}, num_trips_to_show: 4,
-            timestampSize: "value-small", timeOfDaySize: "value--xxsmall"%}
-        </div>
-
-        <div class="column {% if uniqueSituationIds == empty %} gap--medium {% endif %}" data-overflow="true">
-          {% render "arrivalTimeSlots", predictions: {{secondary_stop_predictions}}, num_trips_to_show: 4,
-            timestampSize: "value-small", timeOfDaySize: "value--xxsmall"%}
-        </div>
-    </div>
-    <!-- 
-    {%if uniqueSituationIds != empty%}
-    <div class="mb--3">
-      <span class="label label--small w--auto label--underline">Alerts</span>
-    </div>
-    <div class="columns alerts-table">
-      <div class="column" data-overflow="true">
-      
-        {% for situationId in uniqueSituationIds %}
-          {% assign situation = situations | where: "id", situationId | first %}
-          <div class="item">
-            <div class="meta"></div>
-            <div class="content">
-              <span class="description" data-clamp="2">{{situation.summary.value}}</span>
-              <span class="label label--small label--underline">active: {{situation.activeWindows[0].from | divided_by: 1000 | plus: trmnl.user.utc_offset | date: "%D %l:%M %p" }}</span>
-            </div>
-          </div>
-        {% endfor %}
-    
+ <!-- shared markup -->
+{% template arrivalTimeSlots %}
+  {% for prediction in predictions limit:num_trips_to_show %}
+    {% assign arrival_time = prediction.time %}
+    {% assign localized_arrival_time = arrival_time | plus: {{ trmnl.user.utc_offset }} %}
+    {% assign localized_arrival_time = arrival_time | plus: -28800 %}
+    {% assign arrival_time_stamp = localized_arrival_time | date: "%l:%M" %}
+    {% assign time_of_day = localized_arrival_time | date: "%p" %}
+    {% if forloop.index == 1 %}
+      {% render "arrivalTimeSlot", emphasisValue: 3, textColor: "black", orderText: "arriving", timestampSize: {{timestampSize}},
+        timeOfDaySize: {{timeOfDaySize}}, arrivalTimestamp: {{arrival_time_stamp}}, timeOfDay: {{time_of_day}}, labelModifier: "label--inverted" %}
+    {% elsif forloop.index == 2 %}
+      {% render "arrivalTimeSlot", emphasisValue: 2, textColor: "gray-20", orderText: "next", timestampSize: {{timestampSize}},
+        timeOfDaySize: {{timeOfDaySize}}, arrivalTimestamp: {{arrival_time_stamp}}, timeOfDay: {{time_of_day}}, labelModifier: "label--outline" %}
+    {% else %}
+      {% render "arrivalTimeSlot", emphasisValue: 1, textColor: "gray-40", orderText: "later", timestampSize: {{timestampSize}},
+        timeOfDaySize: {{timeOfDaySize}}, arrivalTimestamp: {{arrival_time_stamp}}, timeOfDay: {{time_of_day}}, labelModifier: "" %}
+    {% endif %}
+  {% else %}
+    <div class="item">
+      <div class="meta"></div>
+      <div class="content text--gray-40">
+        <span class="label label--small">no trains currently running</span>
       </div>
     </div>
-    {% endif %} -->
-  </div>
-</div>
+  {% endfor %}
+{% endtemplate %}
 
-<div class="title_bar m--0">
-  <span class="title">{{ stop_name }}</span>
-</div>
+{% template arrivalTimeSlot %}
+  <div class="item item--emphasis-{{emphasisValue}}">
+    <div class="meta"></div>
+    <div class="content text--{{textColor}}">
+      <!-- <span class="label label--small {{labelModifier}} mb--1">{{orderText}}</span> -->
+      <span>
+        <span class="value {{timestampSize}} value--tnums">{{arrivalTimestamp}}</span>
+        <span class="value {{timeOfDaySize}}">{{timeOfDay}}</span>
+      </span>
+    </div>
+  </div>
+{% endtemplate %}
