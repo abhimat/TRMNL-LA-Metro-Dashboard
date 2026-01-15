@@ -1,0 +1,55 @@
+- keyname: api_key
+  field_type: string
+  name: API Key
+  description: LA Metro Rail API Key
+  placeholder: API
+  help_text: Check <a href="https://developer.metro.net/api/">https://developer.metro.net/api/</a> for details on obtaining a Swiftly API key to access LA Metro Rail data.
+
+- keyname: route_id
+  field_type: select
+  name: Route Name
+  description: Route name for the light rail route you want to track.
+  help_text: Check <a href="https://www.soundtransit.org/help-contacts/business-information/open-transit-data-otd">https://www.soundtransit.org/help-contacts/business-information/open-transit-data-otd</a> for details on obtaining an API key.
+  options:
+  - 'A Line': 'Metro+A+Line'
+  - 'B Line': 'Metro+B+Line'
+  - 'C Line': 'Metro+C+Line'
+  - 'D Line': 'Metro+D+Line'
+  - 'E Line': 'Metro+E+Line'
+  - 'K Line': 'Metro+K+Line'
+
+- keyname: primary_stop_id
+  field_type: string
+  name: Primary Stop Code
+  description: Stop code for primary stop
+  placeholder: 80131
+  help_text: Check Swiftly API for stopCode or stopID.
+
+- keyname: primary_stop_direction
+  field_type: string
+  name: Primary Stop Direction
+  description: The headsign direction the trains for the primary stop are going
+  placeholder: "Atlantic Station"
+  help_text: Check Swiftly API for headsign directions.
+
+- keyname: secondary_stop_id
+  field_type: string
+  name: Secondary Stop Code
+  description: Stop code for secondary stop
+  placeholder: 80131
+  help_text: Check Swiftly API for stopCode or stopID.
+
+- keyname: secondary_stop_direction
+  field_type: string
+  name: Secondary Stop Direction
+  description: The headsign direction the trains for the secondary stop are going
+  placeholder: "Downtown Santa Monica Station"
+  help_text: Check Swiftly API for headsign directions.
+
+- keyname: doesnt_matter
+  name: About This Plugin
+  category: travel,personal
+  field_type: author_bio
+  description: An LA Metro light rail dashboard made by Abhimat Gautam, forked from Sound Transit Link Light Rail dashboard by Alex Yeh.
+  github_url: https://github.com/abhimat/
+  email_address: abhimat@duck.com
