@@ -1,0 +1,405 @@
+{% assign primary_stop_direction = trmnl.plugin_settings.custom_fields_values.primary_stop_direction %}
+{% assign secondary_stop_direction = trmnl.plugin_settings.custom_fields_values.secondary_stop_direction %}
+
+{% assign primary_stop_id = trmnl.plugin_settings.custom_fields_values.primary_stop_id %}
+
+{% assign stop_name = IDX_0.data.predictionsData[0].stopName %}
+{% assign route_name = IDX_0.data.predictionsData[0].routeName %}
+{% assign route_ID = IDX_0.data.predictionsData[0].routeId %}
+
+{% assign destinations = IDX_0.data.predictionsData[0].destinations %}
+
+{% assign primary_stop_destinations = destinations | where: "headsign", primary_stop_direction %}
+{% assign secondary_stop_destinations = IDX_0.data.predictionsData[0].destinations | where: "headsign", secondary_stop_direction %}
+
+{% assign primary_stop_predictions = primary_stop_destinations[0].predictions %}
+{% assign secondary_stop_predictions = secondary_stop_destinations[0].predictions %}
+
+{% if IDX_1.data.routes[0].directions[0].headsigns[0] == primary_stop_direction %}
+  {% assign primary_stop_route_direction = IDX_1.data.routes[0].directions[0] %}
+{% elsif IDX_1.data.routes[0].directions[1].headsigns[0] == primary_stop_direction %}
+  {% assign primary_stop_route_direction = IDX_1.data.routes[0].directions[1] %}
+{% endif %}
+
+{% assign primary_stop = primary_stop_route_direction.stops | where: "id", primary_stop_id | first %}
+
+{% assign primary_route_shape = IDX_1.data.routes[0].shapes | where: "headsign", primary_stop_direction | first %}
+
+{% assign all_vehicles = IDX_2.entity %}
+
+<!--  -->
+
+{% if trmnl.plugin_settings.custom_fields_values.route_id == "Metro+A+Line" %}
+  {% assign logo_url = "https://lacmta.github.io/metro-iconography/Service_ALine.svg" %}
+{% elsif trmnl.plugin_settings.custom_fields_values.route_id == "Metro+B+Line" %}
+  {% assign logo_url = "https://lacmta.github.io/metro-iconography/Service_BLine.svg" %}
+{% elsif trmnl.plugin_settings.custom_fields_values.route_id == "Metro+C+Line" %}
+  {% assign logo_url = "https://lacmta.github.io/metro-iconography/Service_CLine.svg" %}
+{% elsif trmnl.plugin_settings.custom_fields_values.route_id == "Metro+D+Line" %}
+  {% assign logo_url = "https://lacmta.github.io/metro-iconography/Service_DLine.svg" %}
+{% elsif trmnl.plugin_settings.custom_fields_values.route_id == "Metro+E+Line" %}
+  {% assign logo_url = "https://lacmta.github.io/metro-iconography/Service_ELine2.svg" %}
+{% elsif trmnl.plugin_settings.custom_fields_values.route_id == "Metro+K+Line" %}
+  {% assign logo_url = "https://lacmta.github.io/metro-iconography/Service_KLine.svg" %}
+{% else %}
+  {% assign logo_url = "https://lacmta.github.io/metro-iconography/Service_Rail.svg" %}
+{% endif %}
+
+<!-- 
+Todo:
+1. fix schedule and alerts container flex sizing
+-->
+
+<style type="text/css">
+  .route-line {
+    fill: none;
+    stroke: gainsboro;
+    stroke-width: 7;
+  }
+
+  .logo {
+    width: 20px;
+    height: 20px;
+  }
+
+  .alerts-table {
+    max-height: 35%;
+  }
+
+  .target-stop {
+    fill: white;
+    stroke: dimgray;
+    stroke-width: 2;
+  }
+
+  .active-train {
+    fill: black;
+  }
+
+  .stop {
+    fill: white;
+    stroke: dimgray;
+    stroke-width: 2;
+  }
+</style>
+
+<div class="layout layout--row p--4 gap--xxlarge mb--0" style="position:relative">
+  <div class="stretch" style="position:relative">
+    <div class="logo-title w--full" style="position:absolute">
+      <img class="logo" src="{{ logo_url }}" class="image-dither"/>
+      <span class="title">Line</span>
+    </div>
+    <svg id="route" xmlns="http://www.w3.org/2000/svg" class="w--full h--full" viewBox="0 0 1 1" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+  <div class="divider--v"></div> 
+  <div class="flex flex--col flex--stretch-x flex--center gap--none stretch" style="position:relative">
+    <div class="mb--3">
+      <span class="title">{{ route_name }} Schedule</span>
+    </div>
+    
+    <div class="columns time-table mb--4">
+        <div class="column" data-overflow="true">
+          <div>
+            <span class="label label--small w--auto"><em>to</em></span><br>
+            <span class="label label--outline">{{ primary_stop_direction }}</span>
+          </div>
+        </div>
+    
+        <div class="column" data-overflow="true">
+          <div>
+            <span class="label label--small w--auto"><em>to</em></span><br>
+            <span class="label label--outline">{{ secondary_stop_direction }}</span>
+          </div>
+        </div>
+    </div>
+    <div class="columns time-table mb--4">
+        <div class="column {% if uniqueSituationIds == empty %} gap--medium {% endif %}" data-overflow="true">
+          {% render "arrivalTimeSlots", predictions: {{primary_stop_predictions}}, num_trips_to_show: 4,
+            timestampSize: "value-small", timeOfDaySize: "value--xxsmall"%}
+        </div>
+    
+        <div class="column {% if uniqueSituationIds == empty %} gap--medium {% endif %}" data-overflow="true">
+          {% render "arrivalTimeSlots", predictions: {{secondary_stop_predictions}}, num_trips_to_show: 4,
+            timestampSize: "value-small", timeOfDaySize: "value--xxsmall"%}
+        </div>
+    </div>
+    <!-- 
+    {%if uniqueSituationIds != empty%}
+    <div class="mb--3">
+      <span class="label label--small w--auto label--underline">Alerts</span>
+    </div>
+    <div class="columns alerts-table">
+      <div class="column" data-overflow="true">
+      
+        {% for situationId in uniqueSituationIds %}
+          {% assign situation = situations | where: "id", situationId | first %}
+          <div class="item">
+            <div class="meta"></div>
+            <div class="content">
+              <span class="description" data-clamp="2">{{situation.summary.value}}</span>
+              <span class="label label--small label--underline">active: {{situation.activeWindows[0].from | divided_by: 1000 | plus: trmnl.user.utc_offset | date: "%D %l:%M %p" }}</span>
+            </div>
+          </div>
+        {% endfor %}
+    
+      </div>
+    </div>
+    {% endif %} -->
+  </div>
+</div>
+
+<div class="title_bar m--0">
+  <span class="title">{{ stop_name }}</span>
+</div>
+
+<script>
+  const PADDING_RATIO = 0.05;
+  const BASE_SVG_WIDTH = 50;
+  const BASE_SVG_HEIGHT = 50;
+  const MIN_PIXEL_DIST_BETWEEN_STOPS = 12;
+  const TRIP_INDICATOR_SIZE = 8;
+  const STOP_INDICATOR_RADIUS = 3.5;
+  const TARGET_STOP_INDICATOR_NUM_STAR_POINTS = 5;
+  const TARGET_STOP_INDICATOR_INNER_RADIUS = 4;
+  const TARGET_STOP_INDICATOR_OUTER_RADIUS = 6;
+
+//   const targetStop = {{ parentStop | json }}
+//   const targetStopId = targetStop.id;
+//   const stopsForRouteResponse = {{ IDX_2 | json }};
+//   const encodedPolylines = stopsForRouteResponse.data.entry
+//     .stopGroupings[0]
+//     .stopGroups[0]
+//     .polylines
+//     .map(polyline => polyline.points);
+// 
+//   const stopsMap = new Map(
+//     stopsForRouteResponse.data.references.stops
+//       .filter(stop => stop.parent === "")
+//       .map(stop => [stop.id, stop])
+//   );
+//   const stopPoints = [...stopsMap.values()];
+// 
+//   const primaryTripsResponse = {{ IDX_0 | json }}; 
+//   const secondaryTripsResponse = {{ IDX_1 | json }}; 
+//   const combinedTripPositions = getInProgressTripData(primaryTripsResponse)
+//     .concat(getInProgressTripData(secondaryTripsResponse));
+
+  // // Decode polyline points
+  // const polyline_pointsList = encodedPolylines.map(encodedPolyline => {
+  //   return polyline.decode(encodedPolyline)
+  //     .map(coordinatePair => {
+  //       return { lat: parseFloat(coordinatePair[0]), lon: parseFloat(coordinatePair[1]) };
+  //     });
+  // });
+  
+  // Bounding box
+  const primary_route_shape = {{ primary_route_shape | json }};
+  const primary_stop_route_direction = {{ primary_stop_route_direction | json }};
+  const primary_stop = {{ primary_stop | json }};
+  const primary_stop_id = primary_stop.id;
+  const route_ID = {{ route_ID }};
+  const all_vehicles = {{ all_vehicles | json }};
+  
+  const all_points = primary_route_shape.locs.flat();
+  const lats = all_points.map(p => p.lat);
+  const lons = all_points.map(p => p.lon);
+  let min_lat = Math.min(...lats);
+  let max_lat = Math.max(...lats);
+  let min_lon = Math.min(...lons);
+  let max_lon = Math.max(...lons);
+  
+  const route_width = max_lon - min_lon;
+  const route_height = max_lat - min_lat;
+  
+  // Set padding based on size we need to render the route
+  const pad_lon = route_width * PADDING_RATIO;
+  const pad_lat = route_height * PADDING_RATIO;
+  
+  min_lat -= pad_lat;
+  max_lat += pad_lat;
+  min_lon -= pad_lon;
+  max_lon += pad_lon;
+  
+  const ratio = route_width / route_height;
+  const svg_width = BASE_SVG_WIDTH * ratio;
+  const svg_height = BASE_SVG_HEIGHT;
+  
+  console.log(svg_width);
+  console.log(svg_height);
+  
+  const svg = document.getElementById("route");
+  svg.setAttribute("viewBox", `0 0 ${svg_width} ${svg_height}`);
+  
+  // render the points for the route
+  const svg_points = all_points.map(route_point => {
+    const pixel_coords = toNormalizedPixel(route_point)
+    return `${pixel_coords.x},${pixel_coords.y}`;
+  });
+
+  const polylineElement = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+  polylineElement.setAttribute("points", svg_points);
+  polylineElement.setAttribute("class", "route-line");
+  svg.appendChild(polylineElement);
+  
+  // filter out stops that are visually too close to each other to render neatly
+  const stops_to_render = filterCloseStops(
+    primary_stop_route_direction.stops, primary_stop, MIN_PIXEL_DIST_BETWEEN_STOPS
+  );
+
+  // render all stops after filter as a circle except for the target stop
+  stops_to_render.forEach(p => {
+    const pixel_coords = toNormalizedPixel(p);
+    if (p.id != primary_stop_id) {
+      const circle = createStopIndicator(pixel_coords, STOP_INDICATOR_RADIUS);
+      svg.appendChild(circle);
+    }
+  });
+  
+  // render the target stop as a star
+  createTargetStopIndicator(primary_stop);
+  
+  // render all active light rail trains as a triangle
+  all_vehicles.forEach(p => {
+    console.log("start");
+    if ( (typeof p.vehicle.trip !== 'undefined') && (typeof p.vehicle.trip.routeId !== 'undefined') && (typeof p.vehicle.position.bearing !== 'undefined') && (p.vehicle.trip.routeId == route_ID) )  {
+      console.log(p.vehicle.trip.routeId);
+      console.log(p.vehicle.position.bearing);
+      
+      const pixel_coords = vehicleToNormalizedPixel(p.vehicle);
+
+      console.log(pixel_coords.x);
+      console.log(pixel_coords.y);
+      console.log(p.vehicle.position.bearing);
+      
+      const triangle = createTripIndicator(pixel_coords, p.vehicle.position.bearing);
+      svg.appendChild(triangle);
+    }
+    console.log("end");
+  });
+
+  
+  
+  /***********************************/
+  /********* Helper Functions ********/
+  /***********************************/
+
+  // function getInProgressTripData(response) {
+  //   return response.data.entry.arrivalsAndDepartures
+  //     .filter(tripData => tripData.tripStatus.phase == "in_progress")
+  //     .map(tripData => {
+  //       return { 
+  //         lat: tripData.tripStatus.position.lat, 
+  //         lon: tripData.tripStatus.position.lon,
+  //         orientation: tripData.tripStatus.orientation,
+  //         predictedArrivalTime: tripData.predictedArrivalTime
+  //       };
+  //     });
+  // }
+
+  function toNormalizedPixel(p) {
+    const x = ((p.lon - min_lon) / (max_lon - min_lon)) * svg_width;
+    const y = ((max_lat - p.lat) / (max_lat - min_lat)) * svg_height;
+    return { x, y };
+  }
+  
+  function vehicleToNormalizedPixel(vehicle) {
+    const x = ((vehicle.position.longitude - min_lon) / (max_lon - min_lon)) * svg_width;
+    const y = ((max_lat - vehicle.position.latitude) / (max_lat - min_lat)) * svg_height;
+    return { x, y };
+  }
+
+  function calcDistance(stop1, stop2) {
+    const pixel_coords1 = toNormalizedPixel(stop1)
+    const pixel_coords2 = toNormalizedPixel(stop2)
+    const dx = pixel_coords1.x - pixel_coords2.x;
+    const dy = pixel_coords1.y - pixel_coords2.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function filterCloseStops(stops, target, minDist) {
+    // calc dist between each stop and target stop and sort from closest to farthest
+    const stopsSortedByDistFromTarget = stops
+      .map(s => ({ stop: s, dist: calcDistance(s, target) }))
+      .sort((a, b) => a.dist - b.dist);
+    
+    const stopsToKeep = [];
+    for (const stopDist of stopsSortedByDistFromTarget) {
+      if (stopDist.stop.id == primary_stop_id) continue;
+      
+      // too close to target
+      if (calcDistance(stopDist.stop, target) < minDist) continue;
+
+      const tooClose = stopsToKeep.some(s => calcDistance(stopDist.stop, s) < minDist);
+      if (tooClose) continue;
+
+      stopsToKeep.push(stopDist.stop);
+    }
+    
+    return stopsToKeep;
+  }
+
+  function createStarPoints(cx, cy, spikes, outerRadius, innerRadius) {
+    const points = [];
+    const step = Math.PI / spikes;
+  
+    let rot = Math.PI / 2 * 3;
+    let x = cx;
+    let y = cy;
+  
+    for (let i = 0; i < spikes; i++) {
+      x = cx + Math.cos(rot) * outerRadius;
+      y = cy + Math.sin(rot) * outerRadius;
+      points.push(`${x},${y}`);
+      rot += step;
+  
+      x = cx + Math.cos(rot) * innerRadius;
+      y = cy + Math.sin(rot) * innerRadius;
+      points.push(`${x},${y}`);
+      rot += step;
+    }
+  
+    return points.join(" ");
+  }
+
+  function createTargetStopIndicator(p) {
+      const pixel_coords = toNormalizedPixel(p);
+    
+      const star = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      star.setAttribute("class", "target-stop");
+      
+      const starPoints = createStarPoints(pixel_coords.x, pixel_coords.y, TARGET_STOP_INDICATOR_NUM_STAR_POINTS,
+        TARGET_STOP_INDICATOR_INNER_RADIUS, TARGET_STOP_INDICATOR_OUTER_RADIUS);
+      star.setAttribute("points", starPoints);
+      star.setAttribute("transform", `rotate(180, ${pixel_coords.x}, ${pixel_coords.y})`);
+      svg.appendChild(star);
+  }
+
+  function createTrianglePoints(x, y, size) {
+    const half = size / 2;
+    // Upward triangle: tip at (x, y), base below
+    return [
+      `${x},${y - half}`,           // tip
+      `${x - half},${y + half}`,    // bottom-left
+      `${x + half},${y + half}`     // bottom-right
+    ].join(" ");
+  }
+
+  function createTripIndicator(coords, orientation) {
+    const triangle = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    triangle.setAttribute("points", createTrianglePoints(coords.x, coords.y, TRIP_INDICATOR_SIZE));
+    triangle.setAttribute("transform", `rotate(${90-orientation}, ${coords.x}, ${coords.y})`);
+    triangle.setAttribute("class", "active-train");
+
+    return triangle;
+  }
+
+  function createStopIndicator(coords, radius) {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", coords.x);
+    circle.setAttribute("cy", coords.y);
+    circle.setAttribute("r", radius);
+    circle.setAttribute("class", "stop");
+
+    return circle;
+  }
+</script>
