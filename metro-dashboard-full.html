@@ -27,11 +27,17 @@
 
 {% assign all_vehicles = IDX_2.entity %}
 
-{% assign update_time = trmnl.system.timestamp_utc %}
-{% assign localized_update_time = update_time | plus: {{ trmnl.user.utc_offset }} %}
-{% assign localized_update_time = update_time | plus: -28800 %}
+{% assign update_time = IDX_2.header.timestamp %}
+{% assign localized_update_time = update_time | plus: trmnl.user.utc_offset %}
+<!-- {% assign localized_update_time = update_time | plus: -28800 %} -->
 {% assign update_time_stamp = localized_update_time | date: "%l:%M" %}
 {% assign time_of_day = localized_update_time | date: "%p" %}
+
+{% assign trmnl_update_time = trmnl.system.timestamp_utc %}
+{% assign trmnl_localized_update_time = trmnl_update_time | plus: trmnl.user.utc_offset %}
+<!-- {% assign trmnl_localized_update_time = trmnl_update_time | plus: -28800 %} -->
+{% assign trmnl_update_time_stamp = trmnl_localized_update_time | date: "%l:%M" %}
+{% assign trmnl_time_of_day = trmnl_localized_update_time | date: "%p" %}
 
 
 <!--  -->
@@ -105,7 +111,8 @@ Todo:
       <span class="title">{{ route_name }} Schedule</span>
     </div>
     <div class="mb--3">
-      <span class="label label--small w--auto">(last updated: {{ update_time_stamp }} {{ time_of_day }})</span>
+      <span class="label label--small w--auto">(API update: {{ update_time_stamp }} {{ time_of_day }})</span>
+      <span class="label label--small w--auto">(TRMNL update: {{ trmnl_update_time_stamp }} {{ trmnl_time_of_day }})</span>
     </div>
     
     <div class="columns time-table mb--4">
@@ -126,7 +133,7 @@ Todo:
     <div class="columns time-table mb--4">
         <div class="column {% if uniqueSituationIds == empty %} gap--medium {% endif %}" data-overflow="true">
           {% render "arrivalTimeSlots", predictions: {{primary_stop_predictions}}, num_trips_to_show: 4,
-            timestampSize: "value-small", timeOfDaySize: "value--xxsmall"%}
+            timestampSize: "value-small", timeOfDaySize: "value--xxsmall", time_now: {{ time_now }}%}
         </div>
     
         <div class="column {% if uniqueSituationIds == empty %} gap--medium {% endif %}" data-overflow="true">

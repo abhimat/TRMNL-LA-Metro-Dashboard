@@ -12,9 +12,8 @@
 {% assign primary_stop_predictions = primary_stop_destinations[0].predictions %}
 {% assign secondary_stop_predictions = secondary_stop_destinations[0].predictions %}
 
-{% assign update_time = trmnl.system.timestamp_utc %}
-{% assign localized_update_time = update_time | plus: {{ trmnl.user.utc_offset }} %}
-{% assign localized_update_time = update_time | plus: -28800 %}
+{% assign update_time = IDX_2.header.timestamp %}
+{% assign localized_update_time = update_time | plus: trmnl.user.utc_offset %}
 {% assign update_time_stamp = localized_update_time | date: "%l:%M" %}
 {% assign time_of_day = localized_update_time | date: "%p" %}
 
